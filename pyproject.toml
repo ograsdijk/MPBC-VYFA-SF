@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "mpbc-vyfa-sf"
+version = "0.1.0"
+description = "Python interface for a MPB VYFA amplifier"
+authors = ["ograsdijk <o.grasdijk@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "mpbc_vyfa_sf"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+PyVISA = "^1.12.0"
+matplotlib = "^3.6.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib.*",
+]
+ignore_missing_imports = true
