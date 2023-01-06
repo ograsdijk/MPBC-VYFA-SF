@@ -1,4 +1,5 @@
 from typing import Optional, List
+from .enums import LaserState
 
 
 class Property:
@@ -19,7 +20,8 @@ class Property:
         self._write_command = write_command
 
     def __get__(self, instance, owner):
-        return instance._query(f"{self._read_prefix}{self._command}")
+        msg = instance._query(f"{self._read_prefix}{self._command}")
+        return msg
 
     def __set__(self, instance, value) -> None:
         if self._read_only:
@@ -55,7 +57,7 @@ class BoolProperty(Property):
 
     def __get__(self, *args, **kwargs) -> Optional[bool]:
         val = super().__get__(*args, **kwargs)
-        return bool(val)
+        return bool(int(val))
 
     def __set__(self, *args, **kwargs):
         if "value" in kwargs:
@@ -74,3 +76,11 @@ class FlagProperty(Property):
         ret = super().__get__(*args, **kwargs)
         flags = [bool(int(f)) for f in ret.split(" ")]
         return flags
+
+
+class LaserStateProperty(IntProperty):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __get__(self, *args, **kwargs) -> LaserState:
+        return LaserState(super().__get__(*args, **kwargs))

@@ -19,6 +19,9 @@ class Fault(IntEnum):
 
 class LaserState(IntEnum):
     OFF = 0
+    # The keylock only triggers after the interlock is triggered and the key has to be
+    # reset to return the amplifier to normal operation.
+    # Not sure how to read out the current key state.
     KEYLOCK = 6
     INTERLOCK = 7
     FAULT = 8
