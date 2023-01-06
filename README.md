@@ -5,7 +5,7 @@
 
 * `enable_laser()`  
   start laser emission
-* `disable_laser()`
+* `disable_laser()`  
   disable laser emission
 * `get_faults()`  
   get all faults of the amplifier
