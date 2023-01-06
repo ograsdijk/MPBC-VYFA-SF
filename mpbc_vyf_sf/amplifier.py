@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import List, Optional
 
 import pyvisa
 
@@ -16,30 +16,50 @@ from .enums import Alarm, Fault, LaserState
 
 class MPBAmplifier:
 
-    Model = Property("Model", "MODEL")
-    Serial = Property("Serial", "SN")
-    Enabled = BoolProperty("Enable Emission", "LDenable", read_only=True)
-    State = BoolProperty("State", "STATE")
-    LaserState = IntProperty("Laser state", "LASERSTATE")
+    model = Property("Model", "MODEL")
+    serial = Property("Serial", "SN")
+    enabled = BoolProperty("Enable Emission", "LDenable", read_only=True)
+    state = BoolProperty("State", "STATE")
+    laserState = IntProperty("Laser state", "LASERSTATE 0")
 
-    SHGTemperatureSetpoint = FloatProperty(
-        "SHG Temperature Setpoint", "TECSETPT 4", read_only=False
+    seed_current = FloatProperty("Seed current", "LDCURRENT 1", read_prefix="")
+    seed_current_setpoint = FloatProperty("Seed current setpoint", "LDCURRENT 1")
+    preamp_current = FloatProperty("Preamp current", "LDCURRENT 2", read_prefix="")
+    preamp_current_setpoint = FloatProperty("Preamp current setpoint", "LDCURRENT 2")
+    booster_current = FloatProperty("Booster current", "LDCURRENT 3", read_prefix="")
+    booster_current_setpoint = FloatProperty(
+        "Booster current setpoint",
+        "LDCur 3",
+        read_prefix="",
+        write_prefix="",
+        read_only=False,
     )
-    SeedCurrent = FloatPropertyNGet("Seed Current", "LDCURRENT 1")
-    PreampCurrent = FloatPropertyNGet("Preamp Current", "LDCURRENT 2")
-    BoosterCurrent = FloatPropertyNGet(
-        "Booster Current", "LDCURRENT 3", read_only=False
-    )
-    BoosterCurrentSetpoint = FloatProperty(
-        "Booster Current Setpoint", "LDCur 3", read_only=False
-    )
-    SHGTemperature = FloatProperty("SHG Temperature", "TECTEMP 4")
 
-    SeedPower = FloatPropertyNGet("Seed Power", "POWER 1")
-    OutputPower = FloatPropertyNGet("Output Power", "POWER 0")
+    shg_temperature = FloatProperty(
+        "SHG Temperature", "TECTEMP 4", write_command="TECSETPT 4"
+    )
+    shg_temperature_setpoint = FloatProperty(
+        "SHG Temperature setpoint",
+        "TECSETPT 4",
+        read_prefix="",
+        write_prefix="",
+        read_only=False,
+    )
 
-    Alarms = FlagProperty("Alarms", "ALR")
-    Faults = FlagProperty("Faults", "FLT")
+    seed_power = FloatProperty("Seed Power", "POWER 1", read_prefix="")
+    output_power = FloatProperty("Output Power", "POWER 0", read_prefix="")
+
+    power_stabilization = BoolProperty(
+        "Power stabilization",
+        "POWERENABLE",
+        read_prefix="",
+        write_prefix="",
+        read_only=False,
+    )
+
+    alarms = FlagProperty("Alarms", "ALR")
+    faults = FlagProperty("Faults", "FLT")
+    # laser_state = FlagProperty("Laser state", "LASERSTATE 0", read_prefix="")
 
     def __init__(self, resource_name: str, baud_rate: int = 9600):
         self.rm = pyvisa.ResourceManager()
@@ -74,13 +94,17 @@ class MPBAmplifier:
     def disable_laser(self) -> None:
         self._write("setLDenable 0")
 
-    def get_faults(self) -> list[Fault]:
-        faults = self.Faults
+    def get_faults(self) -> List[Fault]:
+        faults = self.faults
         return [Fault(idx) for idx, flag in enumerate(faults) if flag]
 
-    def get_alarms(self) -> list[Alarm]:
-        alarms = self.Alarms
+    def get_alarms(self) -> List[Alarm]:
+        alarms = self.alarms
         return [Alarm(idx) for idx, flag in enumerate(alarms) if flag]
+
+    def get_laser_state(self) -> List[LaserState]:
+        laser_state = self.laser_state
+        return [LaserState(idx) for idx, flag in enumerate(laser_state) if flag]
 
     def enter_test_environment(self) -> None:
         logging.info("Entering the test environment")

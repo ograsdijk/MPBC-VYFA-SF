@@ -1,20 +1,34 @@
-from typing import Optional
+from typing import Optional, List
 
 
 class Property:
-    def __init__(self, name: str, command: str, read_only: bool = True):
+    def __init__(
+        self,
+        name: str,
+        command: str,
+        read_prefix: str = "GET",
+        write_prefix: str = "SET",
+        write_command: Optional[str] = None,
+        read_only: bool = True,
+    ):
         self._name = name
         self._command = command
         self._read_only = read_only
+        self._read_prefix = read_prefix
+        self._write_prefix = write_prefix
+        self._write_command = write_command
 
     def __get__(self, instance, owner):
-        return instance._query(f"GET{self._command}")
+        return instance._query(f"{self._read_prefix}{self._command}")
 
     def __set__(self, instance, value) -> None:
         if self._read_only:
             raise ValueError(f"{self._name} is a read-only attribute")
         else:
-            instance._write(f"SET{self._command} {value}")
+            if self._write_command is None:
+                instance._write(f"{self._write_prefix}{self._command} {value}")
+            else:
+                instance._write(f"{self._write_prefix}{self._write_command} {value}")
 
 
 class FloatProperty(Property):
@@ -56,16 +70,7 @@ class FlagProperty(Property):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def __get__(self, *args, **kwargs) -> list[bool]:
+    def __get__(self, *args, **kwargs) -> List[bool]:
         ret = super().__get__(*args, **kwargs)
         flags = [bool(int(f)) for f in ret.split(" ")]
         return flags
-
-
-class FloatPropertyNGet(FloatProperty):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __get__(self, instance, owner):
-        val = instance._query(f"{self._command}")
-        return float(val)
