@@ -1,11 +1,54 @@
-from mpbc_vyfa_sf import MPBAmplifier, LaserState
+import csv
+import time
 
+import asciichartpy as acp
 import matplotlib.pyplot as plt
 import numpy as np
-import time
-import csv
-from rich.progress import track
-from rich.console import Console
+from rich.console import Console, Group
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    ProgressColumn,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    track,
+)
+
+from mpbc_vyfa_sf import LaserState, MPBAmplifier
+
+
+def get_panel(data, title, height=15, format="{:>2.2f}"):
+    return Panel(acp.plot(data, {"height": height, "format": format}), title=title)
+
+
+class TaskSpeed(ProgressColumn):
+    def render(self, task):
+        if task.speed is None:
+            return ""
+        elif task.speed >= 0.1:
+            return f"{( task.speed or 0 ):.1f}/s"
+        else:
+            return f"{( 1 / task.speed or 0):.1f} s/i"
+
+
+progress = Progress(
+    SpinnerColumn(),
+    TextColumn("{task.description} : {task.fields[value]}", justify="right"),
+    BarColumn(bar_width=None),
+    TaskProgressColumn(show_speed=True),
+    TaskSpeed(),
+    TextColumn("{task.completed} of {task.total}"),
+    "•",
+    TimeElapsedColumn(),
+    TimeRemainingColumn(),
+)
+panel = Panel("")
+group = Group(panel, progress)
 
 com_port = "COM4"
 scan_range = 3  # scan range in celcius to scan around the current setpoint
@@ -58,17 +101,20 @@ with console.status("Setting the first temperature point and waiting 10s to stab
     time.sleep(10)
 
 data = []
-for T in track(
-    np.linspace(
+with Live(group, refresh_per_second=10) as live:
+    task = progress.add_task("[red] Scanning SHG temperature", total=points, value=None)
+    for T in np.linspace(
         current_temperature_setpoint - scan_range / 2,
         current_temperature_setpoint + scan_range / 2,
         points,
-    ),
-    description="Scanning SHG temperature",
-):
-    amp.shg_temperature_setpoint = T
-    time.sleep(dt)
-    data.append((T, amp.shg_temperature, amp.output_power))
+    ):
+        amp.shg_temperature_setpoint = T
+        time.sleep(dt)
+        data.append((T, amp.shg_temperature, amp.output_power))
+        progress.advance(task, advance=1, value=f"{T:>2.2f}")
+        s, x, y = zip(*data)
+        group.renderables[0] = get_panel(y, title="SHG power")
+    # progress.remove_task(task)
 
 amp.disable_laser()
 
