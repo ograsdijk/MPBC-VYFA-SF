@@ -8,8 +8,8 @@ from .attributes import (
     FlagProperty,
     FloatProperty,
     IntProperty,
-    Property,
     LaserStateProperty,
+    Property,
 )
 from .enums import Alarm, Fault
 from .exceptions import MPBCommandError, MPBKeyError
@@ -101,7 +101,7 @@ class MPBAmplifier:
     def enable_laser(self) -> None:
         try:
             self._write("setLDenable 1")
-        except MPBCommandError as e:
+        except MPBCommandError:
             raise MPBKeyError()
 
     def disable_laser(self) -> None:
