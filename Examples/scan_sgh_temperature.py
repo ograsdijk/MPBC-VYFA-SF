@@ -16,7 +16,6 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
     TimeRemainingColumn,
-    track,
 )
 
 from mpbc_vyfa_sf import LaserState, MPBAmplifier
@@ -53,7 +52,7 @@ group = Group(panel, progress)
 com_port = "COM4"
 scan_range = 3  # scan range in celcius to scan around the current setpoint
 dt = 2
-points = 31
+points = 51
 
 console = Console()
 
@@ -76,8 +75,8 @@ with console.status("Starting laser") as status:
     while True:
         time.sleep(0.2)
         status.update(
-            f"Starting laser: {amp.laser_state.name}, booster current = {amp.booster_current:.1f}"
-            f", setpoint = {amp.booster_current_setpoint:.1f}"
+            f"Starting laser: {amp.laser_state.name}, booster current ="
+            f" {amp.booster_current:.1f}, setpoint = {amp.booster_current_setpoint:.1f}"
         )
         if (amp.laser_state == LaserState(52)) & (
             abs(amp.booster_current - amp.booster_current_setpoint) <= 10
@@ -85,8 +84,9 @@ with console.status("Starting laser") as status:
             tstart = time.time()
             while (time.time() - tstart) < 2:
                 status.update(
-                    f"Starting laser: {amp.laser_state.name}, booster current = {amp.booster_current:.1f}, "
-                    f"setpoint = {amp.booster_current_setpoint:.1f}"
+                    f"Starting laser: {amp.laser_state.name}, booster current ="
+                    f" {amp.booster_current:.1f}, setpoint ="
+                    f" {amp.booster_current_setpoint:.1f}"
                 )
                 time.sleep(0.1)
             console.print(
@@ -111,10 +111,9 @@ with Live(group, refresh_per_second=10) as live:
         amp.shg_temperature_setpoint = T
         time.sleep(dt)
         data.append((T, amp.shg_temperature, amp.output_power))
-        progress.advance(task, advance=1, value=f"{T:>2.2f}")
+        progress.update(task, advance=1, value=f"{T:>2.2f}")
         s, x, y = zip(*data)
         group.renderables[0] = get_panel(y, title="SHG power")
-    # progress.remove_task(task)
 
 amp.disable_laser()
 
