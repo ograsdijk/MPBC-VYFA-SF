@@ -18,6 +18,11 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+com_port = "COM4"
+scan_range = 3  # scan range in celcius to scan around the current setpoint
+dt = 2
+points = 51
+
 from mpbc_vyfa_sf import LaserState, MPBAmplifier
 
 
@@ -49,10 +54,6 @@ progress = Progress(
 panel = Panel("")
 group = Group(panel, progress)
 
-com_port = "COM4"
-scan_range = 3  # scan range in celcius to scan around the current setpoint
-dt = 2
-points = 51
 
 console = Console()
 
