@@ -1,4 +1,5 @@
 import csv
+import datetime
 import time
 
 import asciichartpy as acp
@@ -7,24 +8,19 @@ import numpy as np
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    Progress,
-    ProgressColumn,
-    SpinnerColumn,
-    TaskProgressColumn,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-)
-
-com_port = "COM4"
-scan_range = 3  # scan range in celcius to scan around the current setpoint
-dt = 2
-points = 51
+from rich.progress import (BarColumn, Progress, ProgressColumn, SpinnerColumn,
+                           TaskProgressColumn, TextColumn, TimeElapsedColumn,
+                           TimeRemainingColumn)
 
 from mpbc_vyfa_sf import LaserState, MPBAmplifier
 
+com_port = "COM30"
+scan_range = 10  # scan range in celcius to scan around the current setpoint
+dt = 2
+points = 201
+
+
+start_time = datetime.datetime.now().isoformat(timespec='seconds').replace("-","_").replace(":","_")
 
 def get_panel(data, title, height=15, format="{:>2.2f}"):
     return Panel(acp.plot(data, {"height": height, "format": format}), title=title)
@@ -124,7 +120,7 @@ amp.power_stabilization = power_stabilization
 xsetpoint, x, y = zip(*data)
 
 # write data to csv
-with open("shg_temperature_scan.csv", "w", newline="") as csv_file:
+with open(f"shg_temperature_scan_{start_time}.csv", "w", newline="") as csv_file:
     writer = csv.writer(csv_file, delimiter=",")
     writer.writerow(
         ["SHG temperature setpoint [C]", "SHG temperature [C]", "output power [mW]"]
