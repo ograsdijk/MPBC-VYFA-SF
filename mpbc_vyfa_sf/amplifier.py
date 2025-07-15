@@ -16,7 +16,6 @@ from .exceptions import MPBCommandError, MPBKeyError
 
 
 class MPBAmplifier:
-
     model = Property("Model", "MODEL")
     serial = Property("Serial", "SN")
     enabled = BoolProperty("Laser emission status", "LDenable")

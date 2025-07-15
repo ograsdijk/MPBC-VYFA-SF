@@ -1,0 +1,7 @@
+Horizontal{
+    max_height: 4;
+}
+
+StatusWidget{
+    width: 65%;
+}

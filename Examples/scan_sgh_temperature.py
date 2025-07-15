@@ -8,9 +8,16 @@ import numpy as np
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
-from rich.progress import (BarColumn, Progress, ProgressColumn, SpinnerColumn,
-                           TaskProgressColumn, TextColumn, TimeElapsedColumn,
-                           TimeRemainingColumn)
+from rich.progress import (
+    BarColumn,
+    Progress,
+    ProgressColumn,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 from mpbc_vyfa_sf import LaserState, MPBAmplifier
 
@@ -20,7 +27,13 @@ dt = 2
 points = 201
 
 
-start_time = datetime.datetime.now().isoformat(timespec='seconds').replace("-","_").replace(":","_")
+start_time = (
+    datetime.datetime.now()
+    .isoformat(timespec="seconds")
+    .replace("-", "_")
+    .replace(":", "_")
+)
+
 
 def get_panel(data, title, height=15, format="{:>2.2f}"):
     return Panel(acp.plot(data, {"height": height, "format": format}), title=title)
@@ -128,6 +141,13 @@ with open(f"shg_temperature_scan_{start_time}.csv", "w", newline="") as csv_file
     for d in data:
         writer.writerow(d)
 
+fig, ax = plt.subplots(figsize=(8, 5))
+ax.plot(x, y, ".-", lw=2, ms=12)
+ax.set_xlabel("temperature [C]")
+ax.set_ylabel("power [mW]")
+ax.grid(True)
+
+plt.show()
 fig, ax = plt.subplots(figsize=(8, 5))
 ax.plot(x, y, ".-", lw=2, ms=12)
 ax.set_xlabel("temperature [C]")

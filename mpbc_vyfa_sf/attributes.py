@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from .enums import LaserState
 
 
@@ -83,4 +84,5 @@ class LaserStateProperty(IntProperty):
         super().__init__(*args, **kwargs)
 
     def __get__(self, *args, **kwargs) -> LaserState:
+        return LaserState(super().__get__(*args, **kwargs))
         return LaserState(super().__get__(*args, **kwargs))
