@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-import pyvisa
+from serial.tools import list_ports
 from rich.status import Status
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -130,10 +130,9 @@ class MPBCAmpSHGApp(App[None]):
     def on_mount(self) -> None:
         self.title = "MPB Communications VYFA-SF"
         com = self.query_one("#COM", Select)
-        rm = pyvisa.ResourceManager()
-        resources = rm.list_resources()
-        com.set_options([(resource, idr) for idr, resource in enumerate(resources)])
-        self.resources = resources
+        ports = [p.device for p in list_ports.comports()]
+        com.set_options([(port, idr) for idr, port in enumerate(ports)])
+        self.resources = ports
 
         table = self.query_one(DataTable)
         table.add_columns(

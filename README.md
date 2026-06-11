@@ -1,6 +1,17 @@
 # MPBC-VYFA-SF
  Python interface for a MPB Communications VYFA-SF Series amplifier
 
+Communication is over a serial (USB-CDC / COM) port using [pyserial](https://pyserial.readthedocs.io).
+
+# Installation
+```
+pip install mpbc-vyfa-sf
+```
+or, for development with [uv](https://docs.astral.sh/uv/):
+```
+uv sync
+```
+
 # Methods and attributes of the `MPBAmplifier` class
 
 * `enable_laser()`  
@@ -50,7 +61,9 @@
 ```Python
 from mpbc_vyfa_sf import MPBAmplifier
 
-amp = MPBAmplifier(com_port = "COM4")
+# port is the serial COM port; baud_rate (default 9600) and timeout in seconds
+# (default 2.0) are optional
+amp = MPBAmplifier(port="COM4", baud_rate=9600, timeout=2.0)
 
 # get the current laser state
 amp.laser_state
@@ -66,4 +79,10 @@ amp.output_power
 
 # disable the laser
 amp.disable_laser()
+```
+
+`MPBAmplifier` can also be used as a context manager, which closes the serial port on exit:
+```Python
+with MPBAmplifier(port="COM4") as amp:
+    print(amp.laser_state)
 ```

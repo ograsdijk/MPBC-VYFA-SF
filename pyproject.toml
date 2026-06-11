@@ -1,18 +1,35 @@
-[tool.poetry]
+[project]
 name = "mpbc-vyfa-sf"
 version = "0.2.0"
 description = "Python interface for a MPB VYFA amplifier"
-authors = ["ograsdijk <o.grasdijk@gmail.com>"]
+authors = [{ name = "ograsdijk", email = "o.grasdijk@gmail.com" }]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "mpbc_vyfa_sf"}]
+requires-python = ">=3.11"
+dependencies = [
+    "pyserial>=3.5",
+]
+
+[project.urls]
 repository = "https://github.com/ograsdijk/MPBC-VYFA-SF"
 
-[tool.poetry.dependencies]
-python = "^3.9"
-PyVISA = "^1.12.0"
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "hardware: requires a real MPB amplifier on a serial port (set MPB_PORT)",
+]
+
+[tool.ruff]
+target-version = "py311"
+extend-exclude = ["examples"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.20,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "mpbc_vyfa_sf"
+module-root = ""

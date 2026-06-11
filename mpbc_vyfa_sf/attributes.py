@@ -85,4 +85,3 @@ class LaserStateProperty(IntProperty):
 
     def __get__(self, *args, **kwargs) -> LaserState:
         return LaserState(super().__get__(*args, **kwargs))
-        return LaserState(super().__get__(*args, **kwargs))
