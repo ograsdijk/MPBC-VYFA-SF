@@ -1,7 +1,8 @@
 import logging
-from typing import List, Optional
+import re
+from typing import List
 
-import pyvisa
+import serial
 
 from .attributes import (
     BoolProperty,
@@ -57,36 +58,39 @@ class MPBAmplifier:
     alarms = FlagProperty("Alarms", "ALR")
     faults = FlagProperty("Faults", "FLT")
 
-    def __init__(self, resource_name: str, baud_rate: int = 9600):
-        self.rm = pyvisa.ResourceManager()
+    def __init__(self, port: str, baud_rate: int = 9600, timeout: float = 2.0):
+        self.instr = serial.Serial(port=port, baudrate=baud_rate, timeout=timeout)
+        self._termination = b"\r"
 
-        # translate com port to visa port
-        if "COM" in resource_name:
-            resource_name = f"ASRL{resource_name.strip('COM')}::INSTR"
-
-        self.instr = self.rm.open_resource(
-            resource_name,
-            baud_rate=baud_rate,
-            read_termination="\r",
-            write_termination="\r",
-        )
-
-    def __exit__(self):
+    def close(self) -> None:
         self.instr.close()
-        self.rm.close()
+
+    def __enter__(self) -> "MPBAmplifier":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
+
+    def _send(self, command: str) -> None:
+        self.instr.write(command.encode("ascii") + self._termination)
+
+    # device ("D > ") and fault ("F > ") prompt prefixes the amplifier prepends
+    # to query replies
+    _PROMPT_PREFIX = re.compile(r"^[DF]\s*>\s*")
 
     def _query(self, command: str) -> str:
-        msg = self.instr.query(command).strip("D >").strip("F >")
-        msg = self._message_error_handling(msg)
-        return msg
+        self._send(command)
+        msg = self._PROMPT_PREFIX.sub("", self._read())
+        return self._message_error_handling(msg)
 
     def _write(self, command: str) -> None:
-        self.instr.write(command)
+        self._send(command)
         msg = self._read()
         self._message_error_handling(msg)
 
-    def _read(self) -> Optional[str]:
-        return self.instr.read()
+    def _read(self) -> str:
+        msg = self.instr.read_until(self._termination)
+        return msg.decode("ascii").rstrip("\r")
 
     def _message_error_handling(self, message: str) -> str:
         if "MISSING_ARGUMENT" in message:
@@ -94,7 +98,7 @@ class MPBAmplifier:
         elif "CAN_ONLY_BE_USED_FOR_TESTS" in message:
             raise MPBCommandError("Requires test environment")
         elif "DATA_CANNOT_BE_SET" in message:
-            raise MPBCommandError("Cannot execute commanda")
+            raise MPBCommandError("Cannot execute command")
         return message
 
     def enable_laser(self) -> None:
