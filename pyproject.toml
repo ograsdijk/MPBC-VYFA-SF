@@ -1,6 +1,6 @@
 [project]
 name = "mpbc-vyfa-sf"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python interface for a MPB VYFA amplifier"
 authors = [{ name = "ograsdijk", email = "o.grasdijk@gmail.com" }]
 license = "MIT"
