@@ -18,20 +18,46 @@ class FakeSerial:
         self.timeout = None
         self.written: list[bytes] = []
         self.closed = False
-        self._responses: deque[str] = deque()
+        self._responses: deque[bytes] = deque()
+
+    @property
+    def in_waiting(self) -> int:
+        return sum(len(response) for response in self._responses)
 
     def queue(self, *replies: str) -> None:
         """Queue one or more replies (without terminator) to be read back."""
+        self._responses.extend(reply.encode("ascii") + b"\r" for reply in replies)
+
+    def queue_raw(self, *replies: bytes) -> None:
         self._responses.extend(replies)
 
     def write(self, data: bytes) -> int:
         self.written.append(data)
         return len(data)
 
+    def read(self, size: int = 1) -> bytes:
+        if not self._responses:
+            return b""
+        response = self._responses.popleft()
+        chunk = response[:size]
+        remainder = response[size:]
+        if remainder:
+            self._responses.appendleft(remainder)
+        return chunk
+
     def read_until(self, terminator: bytes = b"\r", size=None) -> bytes:
-        if self._responses:
-            return self._responses.popleft().encode("ascii") + terminator
-        return b""
+        if not self._responses:
+            return b""
+        response = self._responses.popleft()
+        idx = response.find(terminator)
+        if idx < 0:
+            return response
+        end = idx + len(terminator)
+        chunk = response[:end]
+        remainder = response[end:]
+        if remainder:
+            self._responses.appendleft(remainder)
+        return chunk
 
     def close(self) -> None:
         self.closed = True

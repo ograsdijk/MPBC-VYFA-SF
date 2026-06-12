@@ -42,7 +42,9 @@ def test_read_returns_empty_on_timeout(amp):
     assert instrument._read() == ""
 
 
-@pytest.mark.parametrize("reply", ["D > 1530", "F > 1530", "D >1530", "1530"])
+@pytest.mark.parametrize(
+    "reply", ["D > 1530", "F > 1530", "D >1530", ">1530", " >1530", "1530"]
+)
 def test_query_strips_prompt_prefix(amp, reply):
     instrument, fake = amp
     fake.queue(reply)
@@ -57,10 +59,31 @@ def test_query_only_strips_leading_prompt_not_payload(amp):
     assert instrument._query("GETMODEL") == "VYFA-SF"
 
 
+def test_query_consumes_value_and_prompt_suffix(amp):
+    instrument, fake = amp
+    fake.queue_raw(b"1530\rD >")
+    assert instrument._query("GETMODEL") == "1530"
+    assert fake.in_waiting == 0
+
+
+def test_query_handles_prompt_prefixed_value_and_next_prompt(amp):
+    instrument, fake = amp
+    fake.queue_raw(b"D >42\rD >")
+    assert instrument._query("GETPOWER 0") == "42"
+
+
+def test_query_drains_delayed_prompt_suffix(amp):
+    instrument, fake = amp
+    fake.queue_raw(b"1530\r", b"D >")
+    assert instrument._query("GETMODEL") == "1530"
+    assert fake.in_waiting == 0
+
+
 ERROR_RESPONSES = [
     "MISSING_ARGUMENT",
     "CAN_ONLY_BE_USED_FOR_TESTS",
     "DATA_CANNOT_BE_SET",
+    "RS232.C 1 UNKNOWN_COMMAND",
 ]
 
 
@@ -99,6 +122,18 @@ def test_disable_laser_sends_command(amp):
     fake.queue("")
     instrument.disable_laser()
     assert fake.written[-1] == b"setLDenable 0\r"
+
+
+def test_enter_test_environment_drains_prompt(amp):
+    instrument, fake = amp
+    fake.queue_raw(
+        b"TEST ENVIRONMENT\r",
+        b"Only knowledgeable personnel should use test commands.\r",
+        b"Be sure to observe all pertinent safety precautions.\rD >",
+    )
+    instrument.enter_test_environment()
+    assert fake.written[-1] == b"testeoa\r"
+    assert fake.in_waiting == 0
 
 
 def test_save_all_sends_command(amp):

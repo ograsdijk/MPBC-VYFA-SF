@@ -74,23 +74,41 @@ class MPBAmplifier:
     def _send(self, command: str) -> None:
         self.instr.write(command.encode("ascii") + self._termination)
 
-    # device ("D > ") and fault ("F > ") prompt prefixes the amplifier prepends
-    # to query replies
-    _PROMPT_PREFIX = re.compile(r"^[DF]\s*>\s*")
+    _PROMPT_PREFIX = re.compile(r"^\s*(?:[DF]\s*)?>\s*")
 
     def _query(self, command: str) -> str:
         self._send(command)
-        msg = self._PROMPT_PREFIX.sub("", self._read())
+        msg = self._read_response()
         return self._message_error_handling(msg)
 
     def _write(self, command: str) -> None:
         self._send(command)
-        msg = self._read()
+        msg = self._read_response()
         self._message_error_handling(msg)
 
     def _read(self) -> str:
         msg = self.instr.read_until(self._termination)
         return msg.decode("ascii").rstrip("\r")
+
+    def _read_response(self) -> str:
+        last = ""
+        for _ in range(8):
+            msg = self._read()
+            if not msg:
+                return last
+            last = self._normalize_response(msg)
+            if last:
+                self._drain_prompt()
+                return last
+        return last
+
+    def _normalize_response(self, message: str) -> str:
+        return self._PROMPT_PREFIX.sub("", message).strip()
+
+    def _drain_prompt(self) -> None:
+        if not int(getattr(self.instr, "in_waiting", 0) or 0):
+            return
+        self.instr.read(int(getattr(self.instr, "in_waiting", 0) or 0))
 
     def _message_error_handling(self, message: str) -> str:
         if "MISSING_ARGUMENT" in message:
@@ -99,6 +117,8 @@ class MPBAmplifier:
             raise MPBCommandError("Requires test environment")
         elif "DATA_CANNOT_BE_SET" in message:
             raise MPBCommandError("Cannot execute command")
+        elif "UNKNOWN_COMMAND" in message:
+            raise MPBCommandError("Unknown command")
         return message
 
     def enable_laser(self) -> None:
@@ -120,9 +140,12 @@ class MPBAmplifier:
 
     def enter_test_environment(self) -> None:
         logging.info("Entering the test environment")
-        logging.info(self._query("testeoa"))
-        logging.info(self._read())
-        logging.info(self._read())
+        self._send("testeoa")
+        for _ in range(3):
+            line = self._normalize_response(self._read())
+            if line:
+                logging.info(line)
+        self._drain_prompt()
         return
 
     def save_all(self) -> None:
