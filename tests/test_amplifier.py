@@ -103,6 +103,34 @@ def test_query_raises_on_error_response(amp, response):
         instrument._query("GETMODEL")
 
 
+def test_query_error_includes_command_and_response(amp):
+    instrument, fake = amp
+    response = "RS232.C 1 UNKNOWN_COMMAND"
+    fake.queue(response)
+
+    with pytest.raises(MPBCommandError) as exc_info:
+        instrument._query("GETPOWER 0")
+
+    assert str(exc_info.value) == (
+        "command='GETPOWER 0', response='RS232.C 1 UNKNOWN_COMMAND': Unknown command"
+    )
+    assert isinstance(exc_info.value.__cause__, MPBCommandError)
+
+
+def test_write_error_includes_command_and_response(amp):
+    instrument, fake = amp
+    response = "DATA_CANNOT_BE_SET"
+    fake.queue(response)
+
+    with pytest.raises(MPBCommandError) as exc_info:
+        instrument._write("SETMODE 1")
+
+    assert str(exc_info.value) == (
+        "command='SETMODE 1', response='DATA_CANNOT_BE_SET': Cannot execute command"
+    )
+    assert isinstance(exc_info.value.__cause__, MPBCommandError)
+
+
 def test_enable_laser_sends_command(amp):
     instrument, fake = amp
     fake.queue("")  # readback after the write
