@@ -96,9 +96,7 @@ class MPBAmplifier:
     def _command_error(
         command: str, response: str, exc: MPBCommandError
     ) -> MPBCommandError:
-        return MPBCommandError(
-            f"command={command!r}, response={response!r}: {exc}"
-        )
+        return MPBCommandError(f"command={command!r}, response={response!r}: {exc}")
 
     def _read(self) -> str:
         msg = self.instr.read_until(self._termination)
