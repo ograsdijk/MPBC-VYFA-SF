@@ -79,12 +79,24 @@ class MPBAmplifier:
     def _query(self, command: str) -> str:
         self._send(command)
         msg = self._read_response()
-        return self._message_error_handling(msg)
+        try:
+            return self._message_error_handling(msg)
+        except MPBCommandError as exc:
+            raise self._command_error(command, msg, exc) from exc
 
     def _write(self, command: str) -> None:
         self._send(command)
         msg = self._read_response()
-        self._message_error_handling(msg)
+        try:
+            self._message_error_handling(msg)
+        except MPBCommandError as exc:
+            raise self._command_error(command, msg, exc) from exc
+
+    @staticmethod
+    def _command_error(
+        command: str, response: str, exc: MPBCommandError
+    ) -> MPBCommandError:
+        return MPBCommandError(f"command={command!r}, response={response!r}: {exc}")
 
     def _read(self) -> str:
         msg = self.instr.read_until(self._termination)
